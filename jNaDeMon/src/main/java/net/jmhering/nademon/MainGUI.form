@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<form xmlns="http://www.intellij.com/uidesigner/form/" version="1" bind-to-class="net.jmhering.nademon.gui.MainGUI">
+  <grid id="27dc6" binding="mainPanel" layout-manager="BorderLayout" hgap="0" vgap="0">
+    <constraints>
+      <xy x="10" y="10" width="901" height="515"/>
+    </constraints>
+    <properties>
+      <minimumSize width="800" height="500"/>
+      <preferredSize width="1200" height="800"/>
+    </properties>
+    <border type="none"/>
+    <children>
+      <scrollpane id="27867" binding="scpScrollPane">
+        <constraints border-constraint="Center"/>
+        <properties/>
+        <border type="none"/>
+        <children>
+          <component id="6c221" class="javax.swing.JTable" binding="tblInfo" custom-create="true">
+            <constraints/>
+            <properties>
+              <autoCreateRowSorter value="true"/>
+              <autoscrolls value="true"/>
+              <columnSelectionAllowed value="false"/>
+              <fillsViewportHeight value="true"/>
+              <rowHeight value="30"/>
+              <showHorizontalLines value="false"/>
+              <showVerticalLines value="false"/>
+            </properties>
+          </component>
+        </children>
+      </scrollpane>
+      <component id="f0ae1" class="javax.swing.JMenuBar" binding="menuMain">
+        <constraints border-constraint="North"/>
+        <properties/>
+      </component>
+    </children>
+  </grid>
+  <buttonGroups>
+    <group name="buttonGroup1">
+      <member id="54336"/>
+    </group>
+  </buttonGroups>
+</form>
