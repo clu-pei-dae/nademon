@@ -8,6 +8,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.json.JSONObject;
 
+import javax.swing.*;
 import java.io.File;
 import java.io.IOException;
 import java.net.URISyntaxException;
@@ -23,11 +24,12 @@ public class NaDeMon {
 
         l.trace("Started.");
 
-        JsonReader j = new JsonReader("http://kjc-sv007/ninfo.php");
-        JSONObject json = j.getResult();
-        NagiosHostCollection hosts = NagiosJsonConverter.convertJsonToNagiosHosts(json);
-        l.debug("Found " + hosts.size() + " Hosts.");
+        SwingUtilities.invokeLater(new Runnable() {
+            public void run() {
+                l.trace("Initializing MainGUI");
+                MainGUI window = new MainGUI();
+            }
+        });
 
-        MainGUI window = new MainGUI();
     }
 }

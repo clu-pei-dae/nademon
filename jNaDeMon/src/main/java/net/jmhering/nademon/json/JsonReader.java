@@ -21,14 +21,10 @@ public class JsonReader {
 
     static final Logger l = LogManager.getLogger("NaDeMon");
 
-    public JsonReader(String url) {
+    public JsonReader(String url) throws IOException {
         this.url = url;
         l.trace("Reading json from " + url);
-        try {
-            this.readJsonFromUrl();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        this.readJsonFromUrl();
     }
 
     private String readAll(Reader rd) throws IOException {

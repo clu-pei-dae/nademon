@@ -9,25 +9,29 @@ import net.jmhering.nademon.models.NagiosHostCollection;
 import net.jmhering.nademon.models.NagiosService;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.json.JSONException;
 import org.json.JSONObject;
 
 import javax.swing.event.TableModelListener;
 import javax.swing.table.AbstractTableModel;
 import javax.swing.table.TableModel;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.TreeMap;
+import java.io.IOException;
+import java.net.UnknownHostException;
+import java.util.*;
 
 /**
  * Created by clupeidae on 10.06.15.
  */
+
 public class InfoTableModel extends AbstractTableModel {
     static final Logger l = LogManager.getLogger("NaDeMon");
     private static InfoTableModel instance;
     private String[] columnNames = new String[5];
     private Object[][] table_data;
+    private String lastUpdated = "";
 
-    private String matchStateToWord(int state) {
+
+    public static String matchStateToWord(int state) {
         switch (state) {
             case 0:
                 return "OK";
@@ -39,6 +43,21 @@ public class InfoTableModel extends AbstractTableModel {
                 return "UNK";
             default:
                 return new Integer(state).toString();
+        }
+    }
+
+    public static int matchWordToState(String state) {
+        switch (state) {
+            case "OK":
+                return 0;
+            case "WARN":
+                return 1;
+            case "CRIT":
+                return 2;
+            case "UNK":
+                return 3;
+            default:
+                return 3;
         }
     }
 
@@ -61,10 +80,35 @@ public class InfoTableModel extends AbstractTableModel {
     }
 
     public void updateData() {
-        JsonReader j = new JsonReader("http://kjc-sv007/ninfo.php");
-        JSONObject json = j.getResult();
-        NagiosHostCollection nagios_hosts = NagiosJsonConverter.convertJsonToNagiosHosts(json);
-        l.debug("Found " + nagios_hosts.size() + " Hosts.");
+        NagiosHostCollection nagios_hosts = new NagiosHostCollection();
+        try {
+            JsonReader j = new JsonReader("http://kjc-sv007:8181/ninfo.php");
+            JSONObject json = j.getResult();
+            nagios_hosts = NagiosJsonConverter.convertJsonToNagiosHosts(json);
+            l.debug("Found " + nagios_hosts.size() + " Hosts.");
+        }
+        catch (IOException e) {
+            l.error("Unable to connect to server. Please check network connectivity");
+            HashMap<String, String> emptyService = new HashMap<String, String>();
+            emptyService.put("plugin_output", "Connection failed!");
+            emptyService.put("current_state", "2");
+            NagiosService s = new NagiosService("Server connectivity", emptyService);
+            HashMap<String, NagiosService> emptyHost = new HashMap<String, NagiosService>();
+            emptyHost.put("Server connectivity", s);
+            NagiosHost h = new NagiosHost("Nagios Server", emptyHost);
+            nagios_hosts.add(h);
+        }
+        catch (JSONException e) {
+            l.error("Unable to parse JSON output of script. Please check if script runs without errors");
+            HashMap<String, String> emptyService = new HashMap<String, String>();
+            emptyService.put("plugin_output", "Connection failed!");
+            emptyService.put("current_state", "2");
+            NagiosService s = new NagiosService("Server connectivity", emptyService);
+            HashMap<String, NagiosService> emptyHost = new HashMap<String, NagiosService>();
+            emptyHost.put("Server connectivity", s);
+            NagiosHost h = new NagiosHost("Nagios Server", emptyHost);
+            nagios_hosts.add(h);
+        }
 
         // Get number of services in total.
         int c_services = 0;
@@ -90,6 +134,8 @@ public class InfoTableModel extends AbstractTableModel {
                 c_row++;
             }
         }
+
+        this.lastUpdated = new Date().toString();
 
         // fireTableRowsInserted(0, c_row - 1);
         fireTableDataChanged();
@@ -125,10 +171,11 @@ public class InfoTableModel extends AbstractTableModel {
             return i;
         }
         else {
-            if (table_data[i][1].equals("kjc-ws009") && table_data[i][2].equals("Reboot")) {
-                l.debug ("WS009 Status: " + table_data[i][3]);
-            }
             return table_data[i][i1];
         }
+    }
+
+    public String getLastUpdated() {
+        return lastUpdated;
     }
 }
