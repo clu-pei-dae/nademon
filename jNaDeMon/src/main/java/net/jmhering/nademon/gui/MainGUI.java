@@ -2,10 +2,13 @@ package net.jmhering.nademon.gui;
 
 import net.jmhering.nademon.gui.components.NaDeMonMainMenuFilterItem;
 import net.jmhering.nademon.gui.components.NaDeMonMainMenuSimpleItem;
+import net.jmhering.nademon.gui.components.NaDeMonSearchTextField;
 import net.jmhering.nademon.gui.components.NaDeMonTablePopupMenu;
-import net.jmhering.nademon.models.NagiosHostCollection;
+import net.jmhering.nademon.models.*;
+import net.jmhering.nademon.models.update.handlers.HostViewUpdateHandler;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.ini4j.Wini;
 
 import javax.imageio.ImageIO;
 import javax.swing.*;
@@ -14,7 +17,10 @@ import java.awt.*;
 import java.awt.event.*;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Comparator;
 
 
@@ -26,28 +32,51 @@ public class MainGUI {
 
     private static final int D_WIDTH = 1200;
     private static final int D_HEIGHT = 800;
-    private static final int UPDATE_INTERVAL = 5000;
+    private static int UPDATE_INTERVAL = 5000;
+    private JTextField searchText;
     private JLabel lblLastUpdate;
     private JPanel mainPanel;
     private InfoTable tblInfo;
     private JScrollPane scpScrollPane;
+    private JPanel menuPanel;
     private JMenuBar menuMain;
+    private JMenuBar menuSearch;
     private JFrame frame;
+    private Wini config;
+    private NagiosConnection nagcon;
+    public ActionListener toggleSearchBar;
     private NagiosHostCollection hosts;
-    protected final InfoTableModel tblModel = InfoTableModel.getInstance();
+    protected InfoTableModel tblModel;
     protected TableRowSorter sorter;
-    private SystemTray tray = SystemTray.getSystemTray();
+    private SystemTray tray;
+    private HostsView hostview;
 
-    public MainGUI() {
+    public MainGUI(Wini config, NagiosConnection nagcon) throws MalformedURLException {
+        this.config = config;
+        this.nagcon = nagcon;
+
+        UPDATE_INTERVAL = this.config.get("NaDeMon", "updateInterval", int.class) * 1000;
+        l.info("Setting update interval to " + UPDATE_INTERVAL);
         l.trace("Creating MainGUI");
+        try {
+            tray = SystemTray.getSystemTray();
+        }
+        catch (UnsupportedOperationException e) {
+            l.debug("System tray not available.");
+        }
+        tblModel = InfoTableModel.getInstance(nagcon);
         createUIComponents();
         frame.pack();
         frame.setVisible(true);
         l.trace("Window showed.");
+        l.trace("Creating HostView");
+        hostview = new HostsView(config, nagcon, this);
+        l.trace("HostView created.");
         startUpdateTimer();
     }
 
     private void startUpdateTimer() {
+        l.trace("Starting update time");
         Timer timer = new Timer(UPDATE_INTERVAL, new ActionListener() {
             public void actionPerformed(ActionEvent actionEvent) {
                 updateTableData();
@@ -56,10 +85,28 @@ public class MainGUI {
         timer.setRepeats(true);
         timer.start();
     }
+    public boolean searchHasFocus() {
+        return searchText.hasFocus();
+    }
+
+    public TableRowSorter getSorter() {
+        return sorter;
+    }
 
     private void updateTableData() {
-        tblModel.updateData();
-        updateTableDescriptionLabel();
+        NagiosHostCollection nagios_hosts;
+        boolean fetchSuccess = nagcon.updateData();
+
+        if (!fetchSuccess) {
+            // If there was en error, we want to show the error msg to the user.
+            nagios_hosts = new NagiosHostCollection();
+            NagiosHost host = NagiosFactory.getNagiosHost("Nagios Server", "Server connection", "2", "Error connecting to server.");
+            host.addService(NagiosFactory.getNagiosService("Server error", "2", nagcon.getErrorMsg()));
+            nagios_hosts.add(host);
+        }
+        else {
+            updateTableDescriptionLabel();
+        }
     }
 
     public void updateTableDescriptionLabel() {
@@ -71,12 +118,14 @@ public class MainGUI {
         frame = new JFrame("MainGUI");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setTitle("Nagios Desktop Monitor");
+        frame.setBackground(Color.WHITE);
 
         // The window panel.
         mainPanel = new JPanel();
         mainPanel.setMinimumSize(new Dimension(D_WIDTH, D_HEIGHT));
         mainPanel.setPreferredSize(new Dimension(D_WIDTH, D_HEIGHT));
         mainPanel.setLayout(new BorderLayout());
+        mainPanel.setBackground(Color.WHITE);
         frame.setContentPane(mainPanel);
 
         // The table.
@@ -123,8 +172,8 @@ public class MainGUI {
         sorter.setComparator(3, new Comparator<Object>() {
 
             public int compare(Object t, Object t1) {
-                int t_int = InfoTableModel.matchWordToState((String)t);
-                int t1_int = InfoTableModel.matchWordToState((String)t1);
+                int t_int = NagiosConstants.matchWordToState((String)t);
+                int t1_int = NagiosConstants.matchWordToState((String)t1);
 
                 return new Integer(t_int).compareTo(t1_int);
             }
@@ -155,36 +204,71 @@ public class MainGUI {
 
         // Scrollpane that contains the Table.
         scpScrollPane = new JScrollPane(tblInfo);
+        scpScrollPane.setBackground(Color.WHITE);
         mainPanel.add(scpScrollPane, BorderLayout.CENTER);
+
+        // Pane that contains the bars and menus.
+        menuPanel = new JPanel();
+        menuPanel.setLayout(new GridBagLayout());
+        menuPanel.setBackground(Color.WHITE);
+        mainPanel.add(menuPanel, BorderLayout.NORTH);
+
+        // The search bar.
+        menuSearch = new JMenuBar();
+        GroupLayout searchLayout = new GroupLayout(menuSearch);
+        searchLayout.setAutoCreateGaps(true);
+        searchLayout.setAutoCreateContainerGaps(true);
+        menuSearch.setLayout(searchLayout);
+        menuSearch.setBorderPainted(false);
+        menuSearch.setBackground(Color.WHITE);
+        JLabel lblSearch = new JLabel("Search for");
+        lblSearch.setHorizontalAlignment(SwingConstants.LEFT);
+        //searchText = new JTextField();
+        searchText = new NaDeMonSearchTextField(this);
+        searchLayout.setHorizontalGroup(searchLayout.createSequentialGroup()
+                        .addComponent(lblSearch)
+                        .addComponent(searchText)
+        );
+        searchLayout.setVerticalGroup(searchLayout.createSequentialGroup()
+                        .addGroup(searchLayout.createParallelGroup(GroupLayout.Alignment.BASELINE)
+                                .addComponent(lblSearch)
+                                .addComponent(searchText))
+        );
+
 
         // The menu bar.
         menuMain = new JMenuBar();
         FlowLayout menuLayout = new FlowLayout();
         menuLayout.setAlignment(FlowLayout.LEFT);
         menuMain.setLayout(menuLayout);
-        mainPanel.add(menuMain, BorderLayout.NORTH);
+        menuMain.setBackground(Color.WHITE);
+        menuMain.setBorderPainted(false);
+        GridBagConstraints menuMainConstraints = new GridBagConstraints();
+        menuMainConstraints.gridx = 0;
+        menuMainConstraints.gridy = 0;
+        menuMainConstraints.fill = GridBagConstraints.HORIZONTAL;
+        menuPanel.add(menuMain, menuMainConstraints);
 
         JLabel lblFilter = new JLabel("Filter by Status: ");
         menuMain.add(lblFilter);
 
         // The OK Filter button.
-        NaDeMonMainMenuFilterItem miOK = new NaDeMonMainMenuFilterItem("OK", sorter, ".*OK.*", this);
+        NaDeMonMainMenuFilterItem miOK = new NaDeMonMainMenuFilterItem("OK", sorter, ".*OK.*", this, "O");
         menuMain.add(miOK);
 
         // The WARN Filter button.
-        NaDeMonMainMenuFilterItem miWARN = new NaDeMonMainMenuFilterItem("WARN", sorter, ".*WARN.*", this);
+        NaDeMonMainMenuFilterItem miWARN = new NaDeMonMainMenuFilterItem("WARN", sorter, ".*WARN.*", this, "W");
         menuMain.add(miWARN);
 
         // The CRIT Filter button.
-        NaDeMonMainMenuFilterItem miCRIT = new NaDeMonMainMenuFilterItem("CRIT", sorter, ".*CRIT.*", this);
+        NaDeMonMainMenuFilterItem miCRIT = new NaDeMonMainMenuFilterItem("CRIT", sorter, ".*CRIT.*", this, "C");
         menuMain.add(miCRIT);
 
         // The ALL Filter button.
-        NaDeMonMainMenuFilterItem miALL = new NaDeMonMainMenuFilterItem("ALL", sorter, ".?", this);
+        final NaDeMonMainMenuFilterItem miALL = new NaDeMonMainMenuFilterItem("ALL", sorter, ".?", this, "A");
         menuMain.add(miALL);
 
         menuMain.add(new JSeparator());
-
 
         // Refresh button.
         ActionListener refreshAction = new ActionListener() {
@@ -192,25 +276,71 @@ public class MainGUI {
                 tblModel.updateData();
             }
         };
-        NaDeMonMainMenuSimpleItem miREFRESH = new NaDeMonMainMenuSimpleItem("Refresh", refreshAction);
+        NaDeMonMainMenuSimpleItem miREFRESH = new NaDeMonMainMenuSimpleItem("Refresh", refreshAction, "R");
         menuMain.add(miREFRESH);
+
+        menuMain.add(new JSeparator());
+
+        final GridBagConstraints menuSearchConstraints = new GridBagConstraints();
+        menuSearchConstraints.gridx = 0;
+        menuSearchConstraints.gridy = 1;
+        menuSearchConstraints.fill = GridBagConstraints.HORIZONTAL;
+
+        toggleSearchBar = new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent actionEvent) {
+                if (Arrays.asList(menuPanel.getComponents()).contains(menuSearch)) {
+                    tblInfo.grabFocus();
+                    l.trace("Removing search bar.");
+                    menuPanel.remove(menuSearch);
+                    miALL.getActionListeners()[0].actionPerformed(new ActionEvent(this, ActionEvent.ACTION_PERFORMED, null));
+                }
+                else {
+                    l.trace("Adding search bar.");
+                    menuPanel.add(menuSearch, menuSearchConstraints);
+                    searchText.grabFocus();
+                }
+                l.trace("Updating UI.");
+                menuPanel.validate();
+                menuPanel.repaint();
+                mainPanel.validate();
+                mainPanel.repaint();
+            }
+        };
+
+        NaDeMonMainMenuSimpleItem miSEARCH = new NaDeMonMainMenuSimpleItem("Search", toggleSearchBar, "F3");
+        menuMain.add(miSEARCH);
+
+        ActionListener showHosts = new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent actionEvent) {
+                if(!hostview.frame.isVisible()) {
+                    hostview.frame.setVisible(true);
+                }
+            }
+        };
+
+        NaDeMonMainMenuSimpleItem miHOSTS = new NaDeMonMainMenuSimpleItem("Hosts", showHosts, "F12");
+        menuMain.add(miHOSTS);
 
         lblLastUpdate = new JLabel("Last Update: #####");
         menuMain.add(lblLastUpdate);
 
         updateTableData();
 
-        // Tray icon
+        // Tray icon.
         if (SystemTray.isSupported()) {
             l.trace("System tray supported");
             BufferedImage trayIconImage = null;
             try {
+                // Load tray icon.
                 trayIconImage = ImageIO.read(ClassLoader.getSystemClassLoader().getResource("icon.png"));
             } catch (IOException e) {
                 e.printStackTrace();
             }
             int trayIconWidth = new TrayIcon(trayIconImage).getSize().width;
 
+            // Create the actual tray icon.
             TrayIcon trayIcon = new TrayIcon(trayIconImage.getScaledInstance(trayIconWidth, -1, Image.SCALE_SMOOTH), "NaDeMon");
 
             trayIcon.addActionListener(new ActionListener() {

@@ -23,7 +23,7 @@ public class JsonReader {
 
     public JsonReader(String url) throws IOException {
         this.url = url;
-        l.trace("Reading json from " + url);
+        l.trace("JsonReader initialized.");
         this.readJsonFromUrl();
     }
 
@@ -42,7 +42,7 @@ public class JsonReader {
             l.debug("Opening file " + this.url);
             BufferedReader rd = new BufferedReader(new InputStreamReader(is, Charset.forName("UTF-8")));
 
-            l.trace("Converting to string");
+            l.trace("Downloading content");
             this.jsonCode = readAll(rd);
 
             l.trace("Parsing JSON");

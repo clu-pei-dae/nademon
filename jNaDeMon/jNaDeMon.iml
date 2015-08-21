@@ -12,6 +12,7 @@
     </content>
     <orderEntry type="jdk" jdkName="1.8" jdkType="JavaSDK" />
     <orderEntry type="sourceFolder" forTests="false" />
+    <orderEntry type="library" exported="" name="java" level="project" />
     <orderEntry type="library" name="Maven: org.apache.logging.log4j:log4j-api:2.3" level="project" />
     <orderEntry type="library" name="Maven: org.apache.logging.log4j:log4j-core:2.3" level="project" />
     <orderEntry type="module-library">
@@ -27,8 +28,6 @@
     </orderEntry>
     <orderEntry type="library" name="org.json:json:20141113" level="project" />
     <orderEntry type="library" name="com.google.guava:guava:18.0" level="project" />
-    <orderEntry type="library" name="images" level="project" />
-    <orderEntry type="library" name="Twinkle Core" level="project" />
-    <orderEntry type="library" name="Twinkle" level="project" />
+    <orderEntry type="library" name="org.ini4j:ini4j:0.5.4" level="project" />
   </component>
 </module>

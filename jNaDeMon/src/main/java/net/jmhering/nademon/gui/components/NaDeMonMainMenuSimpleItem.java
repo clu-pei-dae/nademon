@@ -21,6 +21,12 @@ public class NaDeMonMainMenuSimpleItem extends AbstractNaDeMonMainMenuItem {
         this.label = label;
     }
 
+    public NaDeMonMainMenuSimpleItem(final String label, ActionListener action, String shortcut) {
+        super(label, shortcut);
+        this.action = action;
+        this.label = label;
+    }
+
     @Override
     protected ActionListener performAction() {
         return new ActionListener() {

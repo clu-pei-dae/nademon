@@ -1,8 +1,6 @@
 package net.jmhering.nademon.models;
 
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.Iterator;
+import java.util.*;
 
 /**
  * Created by clupeidae on 10.06.15.
@@ -27,6 +25,7 @@ public class NagiosHostCollection implements Collection<NagiosHost> {
     }
 
     public Iterator<NagiosHost> iterator() {
+        Collections.sort(hosts);
         return hosts.iterator();
     }
 

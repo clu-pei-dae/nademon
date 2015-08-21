@@ -24,8 +24,10 @@ public class NaDeMonTablePopupMenu extends JPopupMenu {
         else {
             this.sorter = sorter;
 
-            JMenuItem lblCaption = new JMenuItem("Sort by");
+            JMenuItem lblCaption = new JMenuItem("Filter by");
             add(lblCaption);
+
+            add(new JSeparator());
 
             JMenuItem srtByHost = new JMenuItem("Host");
             add(srtByHost);

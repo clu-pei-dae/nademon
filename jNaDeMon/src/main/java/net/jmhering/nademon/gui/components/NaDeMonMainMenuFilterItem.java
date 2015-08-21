@@ -28,15 +28,28 @@ public class NaDeMonMainMenuFilterItem extends AbstractNaDeMonMainMenuItem {
         this.gui = gui;
     }
 
+    public NaDeMonMainMenuFilterItem(final String label, final DefaultRowSorter sorter, final String filter, MainGUI gui, String shortcut) {
+        super(label, shortcut);
+        this.sorter = sorter;
+        this.filter = filter;
+        this.label = label;
+        this.gui = gui;
+    }
+
     @Override
     protected ActionListener performAction() {
         return new ActionListener() {
             public void actionPerformed(ActionEvent actionEvent) {
-                l.trace(label + " button pressed.");
-                RowFilter rf = RowFilter.regexFilter(filter, 3);
-                l.trace(rf);
-                sorter.setRowFilter(rf);
-                gui.updateTableDescriptionLabel();
+                if (gui.searchHasFocus()) {
+                    l.trace("Won't perform filtering as the search text has focus.");
+                }
+                else {
+                    l.trace(label + " button pressed.");
+                    RowFilter rf = RowFilter.regexFilter(filter, 3);
+                    l.trace(rf);
+                    sorter.setRowFilter(rf);
+                    gui.updateTableDescriptionLabel();
+                }
             }
         };
     }

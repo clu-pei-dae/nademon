@@ -5,7 +5,7 @@ import java.util.HashMap;
 /**
  * Created by clupeidae on 09.06.15.
  */
-public class NagiosHost {
+public class NagiosHost implements Comparable<NagiosHost>{
     /**
      *
      */
@@ -27,5 +27,13 @@ public class NagiosHost {
 
     public NagiosService getService(String service) {
         return services.get(service);
+    }
+
+    public void addService(NagiosService service) {
+        services.put(service.getName(), service);
+    }
+
+    public int compareTo(NagiosHost nh) {
+        return hostname.compareTo(nh.getHostname());
     }
 }

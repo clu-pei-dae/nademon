@@ -25,4 +25,8 @@ public class NagiosService {
     public String getDetail(String name) {
         return details.get(name);
     }
+
+    public void addDetail(String name, String value) {
+        details.put(name, value);
+    }
 }
