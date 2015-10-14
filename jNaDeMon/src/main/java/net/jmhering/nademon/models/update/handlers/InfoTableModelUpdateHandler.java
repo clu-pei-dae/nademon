@@ -8,10 +8,10 @@ import net.jmhering.nademon.models.update.NagiosConnectionUpdateHandlerInterface
 /**
  * Created by clupeidae on 21.08.15.
  */
-public class MainGuiUpdateHandler implements NagiosConnectionUpdateHandlerInterface {
+public class InfoTableModelUpdateHandler implements NagiosConnectionUpdateHandlerInterface {
     private InfoTableModel tblModel;
 
-    public MainGuiUpdateHandler(InfoTableModel tblModel) {
+    public InfoTableModelUpdateHandler(InfoTableModel tblModel) {
         this.tblModel = tblModel;
     }
 

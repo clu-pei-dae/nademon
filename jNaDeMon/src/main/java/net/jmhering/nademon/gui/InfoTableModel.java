@@ -1,7 +1,7 @@
 package net.jmhering.nademon.gui;
 
 import net.jmhering.nademon.models.*;
-import net.jmhering.nademon.models.update.handlers.MainGuiUpdateHandler;
+import net.jmhering.nademon.models.update.handlers.InfoTableModelUpdateHandler;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -40,9 +40,14 @@ public class InfoTableModel extends AbstractTableModel {
 
         // Insert dummy data.
         table_data = new Object[1][columnNames.length];
+        table_data[0][0] = "0";
+        table_data[0][1] = "None";
+        table_data[0][2] = "Service Connection";
+        table_data[0][3] = "3";
+        table_data[0][4] = "No data loaded yet.";
 
         // Add update handler.
-        nagcon.addOnUpdateHandler(new MainGuiUpdateHandler(this));
+        nagcon.addOnUpdateHandler(new InfoTableModelUpdateHandler(this));
     }
 
     public void updateData() {

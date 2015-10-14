@@ -12,9 +12,8 @@ public class NotificationPopUpFrame extends JDialog {
     protected int WIDTH = 450;
     protected int HEIGHT = 200;
 
-    NotificationPopUpFrame () {
+    public NotificationPopUpFrame (String message) {
         super();
-        String message = "<b><font size=+1>O</font><u>K</u></b><br>SV002<br><br><b>CRIT</b><br>SV003";
         String header = "Nagios Desktop Monitor - Update Alert";
         setSize(WIDTH, HEIGHT);
         setTitle(header);
@@ -44,7 +43,7 @@ public class NotificationPopUpFrame extends JDialog {
             @Override
             public void run() {
                 try {
-                    Thread.sleep(5000); // time after which pop up will be disappeared.
+                    Thread.sleep(8000); // time after which pop up will be disappeared.
                     dispose();
                 } catch (InterruptedException e) {
                     e.printStackTrace();

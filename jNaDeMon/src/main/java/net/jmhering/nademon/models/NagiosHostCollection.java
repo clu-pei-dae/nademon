@@ -6,10 +6,12 @@ import java.util.*;
  * Created by clupeidae on 10.06.15.
  */
 public class NagiosHostCollection implements Collection<NagiosHost> {
-    HashSet<NagiosHost> hosts;
+    //HashSet<NagiosHost> hosts;
+    List<NagiosHost> hosts;
+    boolean sorted = false;
 
     public NagiosHostCollection() {
-        hosts = new HashSet<NagiosHost>();
+        hosts = new ArrayList<>();
     }
 
     public int size() {
@@ -25,11 +27,12 @@ public class NagiosHostCollection implements Collection<NagiosHost> {
     }
 
     public Iterator<NagiosHost> iterator() {
-        Collections.sort(hosts);
+        sort();
         return hosts.iterator();
     }
 
     public Object[] toArray() {
+        sort();
         return hosts.toArray();
     }
 
@@ -38,6 +41,7 @@ public class NagiosHostCollection implements Collection<NagiosHost> {
     }
 
     public boolean add(NagiosHost nagiosHost) {
+        sorted = false;
         return hosts.add(nagiosHost);
     }
 
@@ -50,6 +54,7 @@ public class NagiosHostCollection implements Collection<NagiosHost> {
     }
 
     public boolean addAll(Collection<? extends NagiosHost> collection) {
+        sorted = false;
         return hosts.addAll(collection);
     }
 
@@ -64,4 +69,19 @@ public class NagiosHostCollection implements Collection<NagiosHost> {
     public void clear() {
         hosts.clear();
     }
+
+    private void sort() {
+        if (!sorted) {
+            hosts.sort(new HostSorter());
+        }
+    }
+
+    class HostSorter implements Comparator<NagiosHost> {
+        @Override
+        public int compare(NagiosHost host, NagiosHost t1) {
+            return host.compareTo(t1);
+        }
+    }
+
+
 }

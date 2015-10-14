@@ -6,6 +6,8 @@ import net.jmhering.nademon.gui.components.NaDeMonSearchTextField;
 import net.jmhering.nademon.gui.components.NaDeMonTablePopupMenu;
 import net.jmhering.nademon.models.*;
 import net.jmhering.nademon.models.update.handlers.HostViewUpdateHandler;
+import net.jmhering.nademon.models.update.handlers.MainGUIUpdateHandler;
+import net.jmhering.nademon.models.update.handlers.NotificationUpdateHandler;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.ini4j.Wini;
@@ -55,6 +57,12 @@ public class MainGUI {
         this.config = config;
         this.nagcon = nagcon;
 
+
+        tblModel = InfoTableModel.getInstance(nagcon);
+        hostview = new HostsView(config, nagcon, this);
+
+        nagcon.updateData();
+
         UPDATE_INTERVAL = this.config.get("NaDeMon", "updateInterval", int.class) * 1000;
         l.info("Setting update interval to " + UPDATE_INTERVAL);
         l.trace("Creating MainGUI");
@@ -64,14 +72,17 @@ public class MainGUI {
         catch (UnsupportedOperationException e) {
             l.debug("System tray not available.");
         }
-        tblModel = InfoTableModel.getInstance(nagcon);
+
+
         createUIComponents();
         frame.pack();
         frame.setVisible(true);
         l.trace("Window showed.");
         l.trace("Creating HostView");
-        hostview = new HostsView(config, nagcon, this);
+
         l.trace("HostView created.");
+        nagcon.addOnUpdateHandler(new MainGUIUpdateHandler(this));
+        nagcon.addOnUpdateHandler(new NotificationUpdateHandler(nagcon));
         startUpdateTimer();
     }
 
@@ -79,8 +90,7 @@ public class MainGUI {
         l.trace("Starting update time");
         Timer timer = new Timer(UPDATE_INTERVAL, new ActionListener() {
             public void actionPerformed(ActionEvent actionEvent) {
-                updateTableData();
-            }
+                nagcon.updateData();            }
         });
         timer.setRepeats(true);
         timer.start();
@@ -91,22 +101,6 @@ public class MainGUI {
 
     public TableRowSorter getSorter() {
         return sorter;
-    }
-
-    private void updateTableData() {
-        NagiosHostCollection nagios_hosts;
-        boolean fetchSuccess = nagcon.updateData();
-
-        if (!fetchSuccess) {
-            // If there was en error, we want to show the error msg to the user.
-            nagios_hosts = new NagiosHostCollection();
-            NagiosHost host = NagiosFactory.getNagiosHost("Nagios Server", "Server connection", "2", "Error connecting to server.");
-            host.addService(NagiosFactory.getNagiosService("Server error", "2", nagcon.getErrorMsg()));
-            nagios_hosts.add(host);
-        }
-        else {
-            updateTableDescriptionLabel();
-        }
     }
 
     public void updateTableDescriptionLabel() {
@@ -273,7 +267,7 @@ public class MainGUI {
         // Refresh button.
         ActionListener refreshAction = new ActionListener() {
             public void actionPerformed(ActionEvent actionEvent) {
-                tblModel.updateData();
+                nagcon.updateData();
             }
         };
         NaDeMonMainMenuSimpleItem miREFRESH = new NaDeMonMainMenuSimpleItem("Refresh", refreshAction, "R");
@@ -325,8 +319,6 @@ public class MainGUI {
 
         lblLastUpdate = new JLabel("Last Update: #####");
         menuMain.add(lblLastUpdate);
-
-        updateTableData();
 
         // Tray icon.
         if (SystemTray.isSupported()) {

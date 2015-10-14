@@ -33,18 +33,14 @@ public class NaDeMon {
         try {
             config = new Wini(new File("nademon.ini"));
 
-            SwingUtilities.invokeLater(new Runnable() {
-                public void run() {
-                    l.trace("Initializing MainGUI");
-                    try {
-                        NagiosConnection nagcon = new NagiosConnection(new URL(config.get("NaDeMon", "URL", String.class)));
-                        MainGUI window = new MainGUI(config, nagcon);
-                    } catch (MalformedURLException e) {
-                        l.error("Error parsing the URL: " + config.get("NaDeMon", "URL", String.class));
-                        e.printStackTrace();
-                    }
-                }
-            });
+            l.trace("Initializing MainGUI");
+            try {
+                NagiosConnection nagcon = new NagiosConnection(new URL(config.get("NaDeMon", "URL", String.class)));
+                MainGUI window = new MainGUI(config, nagcon);
+            } catch (MalformedURLException e) {
+                l.error("Error parsing the URL: " + config.get("NaDeMon", "URL", String.class));
+                e.printStackTrace();
+            }
         }
         catch (FileNotFoundException e) {
             l.error("Unable to parse config file 'nademon.ini' in " + System.getProperty("user.dir") + ": File Not Found.");
